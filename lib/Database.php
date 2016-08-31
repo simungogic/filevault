@@ -1,6 +1,6 @@
 <?php
 class Database extends PDO {
-
+    protected static $db;
     private $engine;
     private $host;
     private $database;
@@ -15,6 +15,14 @@ class Database extends PDO {
         $this->pass = DB_PASS;
         $dns = $this->engine.':dbname='.$this->database.";host=".$this->host;
         parent::__construct( $dns, $this->user, $this->pass );
+    }
+
+    public static function getInstance()
+    {
+        if (!isset(Database::$db)) {
+            Database::$db = new Database();
+        }
+        return Database::$db;
     }
 }
 
