@@ -4,7 +4,6 @@ class Model
 {
     function __clone()
     {
-
     }
 
     public function getDatabase()

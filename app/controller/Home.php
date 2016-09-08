@@ -2,16 +2,24 @@
 
 class Home extends Controller
 {
-
    public function index($param = '')
    {
-       $this->data['errors'] = null;
-       $this->setLayout("login")->renderLayout();
+       $this->getView('header');
+       $this->getView('home');
+       $this->getView('footer');
+       //$this->getView('');
+       $this->renderLayout();
    }
 
    public function register()
    {
-       $this->data['errors'] = null;
-       $this->setLayout("registr")->renderLayout();
+       $this->getView('registr');
+       $this->renderLayout();
+   }
+
+   public function login()
+   {
+       $this->getView('login');
+       $this->renderLayout();
    }
 }

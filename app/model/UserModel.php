@@ -1,18 +1,19 @@
 <?php
 
-class CustomerModel extends Model
+class UserModel extends Model
 {
     public function login($username, $password, $salt = "inchoo")
     {
         $password = $password . $salt;
         $password = sha1($password);
-        $query = self::getDatabase()->prepare("SELECT * FROM User WHERE Username = :username");
-        $query2 = self::getDatabase()->prepare("SELECT * FROM User WHERE Username = :username AND Password = :password");
+        $query = $this->getDatabase()->prepare("SELECT * FROM User WHERE Username = :username");
+        $query2 = $this->getDatabase()->prepare("SELECT * FROM User WHERE Username = :username AND Password = :password");
         $query->bindParam(':username', $username);
         $query->execute();
         $query2->bindParam(':username', $username);
         $query2->bindParam(':password', $password);
         $query2->execute();
+        $rows = $query2->fetch();
         $error_array = null;
 
         if (empty($username) || empty($password)) {
@@ -26,25 +27,47 @@ class CustomerModel extends Model
         if ($query2->rowCount() != 1) {
             $error_array[] = "Lozinka nije valjana!";
         }
+
+        if($rows['Confirmed'] == 0)
+        {
+            $error_array[] = "Korisnik nije potvrđen!";
+        }
+
         return $error_array;
+
+    }
+
+    public function getId($username,$password,$salt = "inchoo")
+    {
+        $password = $password . $salt;
+        $password = sha1($password);
+        $query = $this->getDatabase()->prepare("SELECT UserId FROM User WHERE Username = :username AND Password = :password");
+        $query->bindParam(':username', $username);
+        $query->bindParam(':password', $password);
+        $query->execute();
+        $rows = $query->fetch();
+        return $rows['UserId'];
     }
 
     public function register($username, $password, $email, $salt = "inchoo")
     {
         $password = $password . $salt;
         $password = sha1($password);
-        $query = $this->getDatabase()->prepare("INSERT INTO User(Username,Password,Email) VALUES(:username,:password,:email)");
+        $validate = $this->randomString();
+        $query = $this->getDatabase()->prepare("INSERT INTO User(Username,Password,Email,Validate,Confirmed) VALUES(:username,:password,:email,:validate,:confirmed)");
         $query->bindParam(':username', $username);
         $query->bindParam(':password', $password);
         $query->bindParam(':email', $email);
+        $query->bindParam(':validate', $validate);
+        $query->bindParam(':confirmed', $confirmed);
         $query->execute();
     }
 
     public function validateReg($username, $password, $email)
     {
         $error_array = array();
-        $query = self::getDatabase()->prepare("SELECT * FROM User WHERE Username=:username");
-        $query2 = self::getDatabase()->prepare("SELECT * FROM User WHERE Email=:email");
+        $query = $this->getDatabase()->prepare("SELECT * FROM User WHERE Username=:username");
+        $query2 = $this->getDatabase()->prepare("SELECT * FROM User WHERE Email=:email");
         $query->bindParam(':username', $username);
         $query2->bindParam(':email', $email);
         $query->execute();
@@ -66,14 +89,13 @@ class CustomerModel extends Model
             $error_array[] = "E-mail je zauzet!";
         }
 
-        if (strlen($password) < 5 || strlen($password > 7)) {
+        if (strlen($password) < 5 || strlen($password) > 7) {
             $error_array[] = "Lozinka mora biti između 5 i 7 znakova!";
         }
 
         if (!$this->validateEmail($email)) {
             $error_array[] = "E-mail nije u valjanom formatu!";
         }
-
         return $error_array;
     }
 
@@ -90,6 +112,37 @@ class CustomerModel extends Model
             return false;
         } else return true;
     }
+
+    public static function redirect($url)
+    {
+        header('Location:'.$url);
+        die();
+    }
+
+    public function randomString($length = 32) {
+        $str = "";
+        $characters = array_merge(range('A','Z'), range('a','z'), range('0','9'));
+        $max = count($characters)-1;
+        for ($i = 0; $i < $length; $i++) {
+            $rand = rand(0, $max);
+            $str .= $characters[$rand];
+        }
+        return $str;
+    }
+
+    public function verify($value)
+    {
+        $query = $this->getDatabase()->prepare("SELECT Validate FROM User WHERE Validate=:validate");
+        $query2 = $this->getDatabase()->prepare("UPDATE User SET Confirmed='1' WHERE Validate=:validate");
+        $query->bindParam(':validate', $value);
+        $query2->bindParam(':validate', $value);
+        $query->execute();
+        if($query->rowCount() == 1)
+        {
+            $query2->execute();
+        }
+    }
+
 }
 
 

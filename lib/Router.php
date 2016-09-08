@@ -9,7 +9,7 @@ class Router
     public function __construct()
     {
         $url = $this->_parseUrl();
-
+        $url[0] = ucfirst($url[0]);
         if (file_exists(APP_ROOT . '/app/controller/' . $url[0] . '.php')) {
             $this->controller = $url[0];
             unset($url[0]);
@@ -21,11 +21,9 @@ class Router
             $this->method = "index";
         }
 
-
         if(!class_exists($this->controller)) {
             $this->set404();
         }
-
 
         $this->controller = new $this->controller;
 
@@ -40,10 +38,10 @@ class Router
             $this->method = "index";
         }
 
-        $this->params = $url ? array_values($url) : [];
-
-        call_user_func_array([$this->controller, $this->method], $this->params);
-
+        $this->params = $url ? array_values($url):null;
+        FileVault::model('request')->setParams($this->params);
+        $value[] = FileVault::model('request')->getParam('key');
+        call_user_func_array([$this->controller, $this->method], $value);
     }
 
     public function set404()
